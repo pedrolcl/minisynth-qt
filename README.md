@@ -23,10 +23,10 @@ Tests built with Qt 5.15.2, Qt 6.2.4 and Qt 6.4-beta1
 
 :question: means that the results are not conclusive.
 
-| Platform:      | Qt 5.x             | Qt 6.2             | Qt 6.4-beta        |
+| Platform:      | Qt 5.x             | Qt 6.0 - 6.3       | Qt 6.4-beta        |
 | -------------- | ------------------ | ------------------ | ------------------ |
 | Linux          | :heavy_check_mark: | :x: [^1]           | :heavy_check_mark: |
-| macOS          | :question:         | :question:         | :question:         |
+| macOS          | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: |
 | Windows        | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: |
 
-[^1]: Bug closed in 6.4; [report](https://bugreports.qt.io/browse/QTBUG-101169).
+[^1]: Very high latency. Bug closed in 6.4 ( [report](https://bugreports.qt.io/browse/QTBUG-101169) ).
