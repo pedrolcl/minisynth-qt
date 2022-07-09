@@ -11,4 +11,24 @@ The [Qt Multimedia](https://doc.qt.io/qt-6.2/multimediaoverview.html) [audio out
 
 The applied buffer size sometimes is not the same as the requested buffer size, but the real latency is usually a smaller value anyway. See the debug output of the program for the real values achieved in your system.
 
-An useful conclusion from this prototype is that the infrastructure may be usable across platforms and Qt versions, with only some exceptions: Qt versions between Qt 6.0 and Qt 6.3 are not suitable for Linux applications; see for instance [this bug report](https://bugreports.qt.io/browse/QTBUG-101169).
+## Results
+
+An useful conclusion from this prototype is that the infrastructure may be usable across platforms and Qt versions. Some exceptions are Qt versions between Qt 6.0 and Qt 6.3 which are not suitable for Linux.
+
+Tests built with Qt 5.15.2, Qt 6.2.4 and Qt 6.4-beta1
+
+:heavy_check_mark: means that it is usable.
+
+:x: means that it is not usable.
+
+:question: means that the results are not conclusive.
+
+| Platform:      | Qt 5.x             | Qt 6.2             | Qt 6.4-beta        |
+| -------------- | ------------------ | ------------------ | ------------------ |
+| Linux          | :heavy_check_mark: | :x: [^1]           | :heavy_check_mark: |
+| macOS          | :question:         | :question:         | :question:         |
+| Windows        | :heavy_check_mark: | :heavy_check_mark: | :x: [^2]           |
+
+[^1]: Bug closed in 6.4; see [this bug report](https://bugreports.qt.io/browse/QTBUG-101169)
+[^2]: Bug?
+
