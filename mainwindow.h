@@ -55,6 +55,9 @@ public:
     MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
 
+signals:
+    void underrunDetected();
+
 private:
     void initializeWindow();
 #if QT_VERSION < QT_VERSION_CHECK(6,0,0)
@@ -68,11 +71,13 @@ private slots:
     void volumeChanged(int value);
     void bufferChanged(int value);
     void octaveChanged(int value);
+    void underrunMessage();
 
 private:
     Ui::MainWindow *m_ui;
     QAudioFormat m_format;
     int m_bufferTime;
+    bool m_running;
     QScopedPointer<ToneSynthesizer> m_synth;
 #if QT_VERSION < QT_VERSION_CHECK(6,0,0)
     QScopedPointer<QAudioOutput> m_audioOutput;

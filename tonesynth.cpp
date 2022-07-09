@@ -110,10 +110,12 @@ qint64 ToneSynthesizer::writeData(const char *data, qint64 len)
 
 qint64 ToneSynthesizer::size() const
 {
+    qDebug() << Q_FUNC_INFO;
 	return std::numeric_limits<qint64>::max();
 }
 
 qint64 ToneSynthesizer::bytesAvailable() const
 {
+    qDebug() << Q_FUNC_INFO;
 	return std::numeric_limits<qint64>::max();
 }

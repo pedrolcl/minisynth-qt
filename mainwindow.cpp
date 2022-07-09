@@ -19,6 +19,7 @@
 #include <QDebug>
 #include <QtMath>
 #include <QMessageBox>
+#include <QTimer>
 #if QT_VERSION < QT_VERSION_CHECK(6,0,0)
 #include <QAudioDeviceInfo>
 #include <QAudioOutput>
@@ -35,6 +36,7 @@ MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
     , m_ui(new Ui::MainWindow)
     , m_bufferTime(50)
+    , m_running(false)
 {
     qDebug() << Q_FUNC_INFO;
     m_ui->setupUi(this);
@@ -92,6 +94,7 @@ void MainWindow::initializeWindow()
     connect(m_ui->volumeSlider, SIGNAL(valueChanged(int)), this, SLOT(volumeChanged(int)));
     connect(m_ui->bufferSpin, SIGNAL(valueChanged(int)), this, SLOT(bufferChanged(int)));
     connect(m_ui->octaveSpin, SIGNAL(valueChanged(int)), this, SLOT(octaveChanged(int)));
+    connect(this, &MainWindow::underrunDetected, this, &MainWindow::underrunMessage );
 }
 
 #if QT_VERSION < QT_VERSION_CHECK(6,0,0)
@@ -100,6 +103,7 @@ void MainWindow::initializeAudio(const QAudioDeviceInfo &deviceInfo)
 void MainWindow::initializeAudio(const QAudioDevice &deviceInfo)
 #endif
 {
+    m_running = false;
     qDebug() << Q_FUNC_INFO
 #if QT_VERSION < QT_VERSION_CHECK(6,0,0)
              << deviceInfo.deviceName();
@@ -118,16 +122,24 @@ void MainWindow::initializeAudio(const QAudioDevice &deviceInfo)
     m_synth->start();
 #if QT_VERSION < QT_VERSION_CHECK(6,0,0)
     m_audioOutput.reset(new QAudioOutput(deviceInfo, m_format));
+    QObject::connect(m_audioOutput.data(), &QAudioOutput::stateChanged, this, [=](QAudio::State state){
 #else
     m_audioOutput.reset(new QAudioSink(deviceInfo, m_format));
+    QObject::connect(m_audioOutput.data(), &QAudioSink::stateChanged, this, [=](QAudio::State state){
 #endif
+        qDebug() << "Audio Output state:" << state << m_audioOutput->error();
+        if (m_running && (m_audioOutput->error() == QAudio::UnderrunError)) {
+            emit underrunDetected();
+        }
+    });
     m_audioOutput->setBufferSize(bufferLength);
     m_audioOutput->start(m_synth.data());
+    auto bufferTime = m_format.durationForBytes(m_audioOutput->bufferSize()) / 1000;
     qDebug() << "applied buffer size:" << m_audioOutput->bufferSize()
-             << "bytes," << m_format.durationForBytes(m_audioOutput->bufferSize()) / 1000
-             << "milliseconds";
+             << "bytes," << bufferTime << "milliseconds";
     volumeChanged(m_ui->volumeSlider->value());
     octaveChanged(m_ui->octaveSpin->value());
+    QTimer::singleShot(bufferTime * 2, this, [=]{ m_running = true; });
 }
 
 void MainWindow::deviceChanged(int index)
@@ -166,4 +178,13 @@ void MainWindow::octaveChanged(int value)
 {
     qDebug() << Q_FUNC_INFO << value;
     m_synth->setOctave(value);
+}
+
+void MainWindow::underrunMessage()
+{
+    m_running = false;
+    QMessageBox::warning( this, "Underrun Error",
+                          "Audio buffer underrun errors have been detected."
+                          "Please increase the buffer time to avoid them in the future.");
+    m_running = true;
 }
