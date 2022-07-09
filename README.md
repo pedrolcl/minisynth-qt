@@ -13,7 +13,7 @@ The applied buffer size sometimes is not the same as the requested buffer size, 
 
 ## Results
 
-An useful conclusion from this prototype is that the infrastructure may be usable across platforms and Qt versions. Some exceptions are Qt versions between Qt 6.0 and Qt 6.3 which are not suitable for Linux.
+An useful conclusion from this prototype is that the infrastructure may be usable across platforms and Qt versions. Some exceptions are Qt versions between Qt 6.0 and Qt 6.3 (both inclusive) which are not suitable on Linux.
 
 Tests built with Qt 5.15.2, Qt 6.2.4 and Qt 6.4-beta1
 
@@ -27,8 +27,6 @@ Tests built with Qt 5.15.2, Qt 6.2.4 and Qt 6.4-beta1
 | -------------- | ------------------ | ------------------ | ------------------ |
 | Linux          | :heavy_check_mark: | :x: [^1]           | :heavy_check_mark: |
 | macOS          | :question:         | :question:         | :question:         |
-| Windows        | :heavy_check_mark: | :heavy_check_mark: | :x: [^2]           |
+| Windows        | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: |
 
-[^1]: Bug closed in 6.4; see [this bug report](https://bugreports.qt.io/browse/QTBUG-101169)
-[^2]: Bug?
-
+[^1]: Bug closed in 6.4; [report](https://bugreports.qt.io/browse/QTBUG-101169).

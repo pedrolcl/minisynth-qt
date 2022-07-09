@@ -16,6 +16,7 @@
     along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include <limits>
 #include <QDebug>
 #include <QtMath>
 #include "tonesynth.h"
@@ -81,6 +82,7 @@ qint64 ToneSynthesizer::readData(char *data, qint64 maxlen)
 #else
             m_format.bytesPerSample();
 #endif
+	Q_ASSERT(channelBytes > 0);
     qint64 length = (maxlen / channelBytes) * channelBytes;
     qint64 buflen = length;
     unsigned char *ptr = reinterpret_cast<unsigned char *>(data);
@@ -103,5 +105,15 @@ qint64 ToneSynthesizer::writeData(const char *data, qint64 len)
     Q_UNUSED(data);
     Q_UNUSED(len);
     qDebug() << Q_FUNC_INFO;
-    return 0;
+	return 0;
+}
+
+qint64 ToneSynthesizer::size() const
+{
+	return std::numeric_limits<qint64>::max();
+}
+
+qint64 ToneSynthesizer::bytesAvailable() const
+{
+	return std::numeric_limits<qint64>::max();
 }
