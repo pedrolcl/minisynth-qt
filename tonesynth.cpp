@@ -60,9 +60,10 @@ void ToneSynthesizer::noteOn(const QString &note)
 void ToneSynthesizer::noteOff()
 {
     qDebug() << Q_FUNC_INFO
-             << "real latency:"
+             << "last synth period:"
+             << m_lastBufferSize << "bytes,"
              << m_format.durationForBytes(m_lastBufferSize) / 1000
-             << "ms";
+             << "milliseconds";
     m_active = false;
 }
 
@@ -74,27 +75,27 @@ void ToneSynthesizer::setOctave(int newOctave)
 qint64 ToneSynthesizer::readData(char *data, qint64 maxlen)
 {
     //qDebug() << Q_FUNC_INFO << maxlen;
-    const int channelBytes =
+    const qint64 channelBytes =
 #if QT_VERSION < QT_VERSION_CHECK(6,0,0)
             m_format.sampleSize() / CHAR_BIT;
 #else
             m_format.bytesPerSample();
 #endif
-    qint64 length = maxlen;
+    qint64 length = (maxlen / channelBytes) * channelBytes;
+    qint64 buflen = length;
     unsigned char *ptr = reinterpret_cast<unsigned char *>(data);
-    while (length){
-        float x = 0.0;
+    while (length > 0){
+        float currentSample = 0.0;
         if (m_active) {
-            qreal currentSample = qSin(m_currentAngle);
+            currentSample = qSin(m_currentAngle);
             m_currentAngle += m_angleDelta;
-            x = currentSample;
         }
-        *reinterpret_cast<float *>(ptr) = x;
+        *reinterpret_cast<float *>(ptr) = currentSample;
         ptr += channelBytes;
         length -= channelBytes;
     }
-    m_lastBufferSize = maxlen;
-    return maxlen;
+    m_lastBufferSize = buflen;
+    return buflen;
 }
 
 qint64 ToneSynthesizer::writeData(const char *data, qint64 len)

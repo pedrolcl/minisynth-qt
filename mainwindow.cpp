@@ -64,21 +64,30 @@ MainWindow::~MainWindow()
 void MainWindow::initializeWindow()
 {
     qDebug() << Q_FUNC_INFO;
+    m_format.setSampleRate(44100);
 #if QT_VERSION < QT_VERSION_CHECK(6,0,0)
+    m_format.setChannelCount(1);
+    m_format.setSampleSize(sizeof(float) * CHAR_BIT);
+    m_format.setCodec("audio/pcm");
+    m_format.setByteOrder(QAudioFormat::LittleEndian);
+    m_format.setSampleType(QAudioFormat::Float);
     const QAudioDeviceInfo &defaultDeviceInfo = QAudioDeviceInfo::defaultOutputDevice();
     m_ui->deviceBox->addItem(defaultDeviceInfo.deviceName(), QVariant::fromValue(defaultDeviceInfo));
     for (auto &deviceInfo: QAudioDeviceInfo::availableDevices(QAudio::AudioOutput)) {
-        if (deviceInfo != defaultDeviceInfo)
+        if (deviceInfo != defaultDeviceInfo && deviceInfo.isFormatSupported(m_format))
             m_ui->deviceBox->addItem(deviceInfo.deviceName(), QVariant::fromValue(deviceInfo));
     }
 #else
+    m_format.setChannelConfig(QAudioFormat::ChannelConfigMono);
+    m_format.setSampleFormat(QAudioFormat::Float);
     const QAudioDevice &defaultDeviceInfo = QMediaDevices::defaultAudioOutput();
     m_ui->deviceBox->addItem(defaultDeviceInfo.description(), QVariant::fromValue(defaultDeviceInfo));
     for (auto &deviceInfo: QMediaDevices::audioOutputs()) {
-        if (deviceInfo != defaultDeviceInfo)
+        if (deviceInfo != defaultDeviceInfo && deviceInfo.isFormatSupported(m_format))
             m_ui->deviceBox->addItem(deviceInfo.description(), QVariant::fromValue(deviceInfo));
     }
 #endif
+    m_synth.reset(new ToneSynthesizer(m_format));
     connect(m_ui->deviceBox, SIGNAL(activated(int)), this, SLOT(deviceChanged(int)));
     connect(m_ui->volumeSlider, SIGNAL(valueChanged(int)), this, SLOT(volumeChanged(int)));
     connect(m_ui->bufferSpin, SIGNAL(valueChanged(int)), this, SLOT(bufferChanged(int)));
@@ -94,17 +103,9 @@ void MainWindow::initializeAudio(const QAudioDevice &deviceInfo)
     qDebug() << Q_FUNC_INFO
 #if QT_VERSION < QT_VERSION_CHECK(6,0,0)
              << deviceInfo.deviceName();
-    m_format.setChannelCount(1);
-    m_format.setSampleSize(sizeof(float) * CHAR_BIT);
-    m_format.setCodec("audio/pcm");
-    m_format.setByteOrder(QAudioFormat::LittleEndian);
-    m_format.setSampleType(QAudioFormat::Float);
 #else
              << deviceInfo.description();
-    m_format.setChannelConfig(QAudioFormat::ChannelConfigMono);
-    m_format.setSampleFormat(QAudioFormat::Float);
 #endif
-    m_format.setSampleRate(44100);
     if (!deviceInfo.isFormatSupported(m_format)) {
         QMessageBox::warning(this, "Audio format not supported",
                              "The selected audio device does not support the synth's audio format. "
@@ -112,8 +113,8 @@ void MainWindow::initializeAudio(const QAudioDevice &deviceInfo)
         return;
     }
     qint64 bufferLength = m_format.bytesForDuration( m_bufferTime * 1000 );
-    qDebug() << "requested buffer size:" << bufferLength << "bytes (" << m_bufferTime << "milliseconds )";
-    m_synth.reset(new ToneSynthesizer(m_format));
+    qDebug() << "requested buffer size:" << bufferLength 
+             << "bytes," << m_bufferTime << "milliseconds";
     m_synth->start();
 #if QT_VERSION < QT_VERSION_CHECK(6,0,0)
     m_audioOutput.reset(new QAudioOutput(deviceInfo, m_format));
@@ -123,7 +124,7 @@ void MainWindow::initializeAudio(const QAudioDevice &deviceInfo)
     m_audioOutput->setBufferSize(bufferLength);
     m_audioOutput->start(m_synth.data());
     qDebug() << "applied buffer size:" << m_audioOutput->bufferSize()
-             << "bytes, time:" << m_format.durationForBytes(m_audioOutput->bufferSize()) / 1000.0
+             << "bytes," << m_format.durationForBytes(m_audioOutput->bufferSize()) / 1000
              << "milliseconds";
     volumeChanged(m_ui->volumeSlider->value());
     octaveChanged(m_ui->octaveSpin->value());
@@ -154,9 +155,11 @@ void MainWindow::volumeChanged(int value)
 
 void MainWindow::bufferChanged(int value)
 {
-    qDebug() << Q_FUNC_INFO << value;
-    m_bufferTime = value;
-    deviceChanged(m_ui->deviceBox->currentIndex());
+    if (m_bufferTime != value) {
+        m_bufferTime = value;
+        deviceChanged(m_ui->deviceBox->currentIndex());
+        qDebug() << Q_FUNC_INFO << value;
+    }
 }
 
 void MainWindow::octaveChanged(int value)
