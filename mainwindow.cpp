@@ -56,6 +56,7 @@ MainWindow::MainWindow(QWidget *parent)
 MainWindow::~MainWindow()
 {
     qDebug() << Q_FUNC_INFO;
+    m_stallDetector.stop();
     m_audioOutput->stop();
     if(!m_synth.isNull()) {
         m_synth->stop();
@@ -90,11 +91,21 @@ void MainWindow::initializeWindow()
     }
 #endif
     m_synth.reset(new ToneSynthesizer(m_format));
+    m_ui->bufferSpin->setValue(m_bufferTime);
     connect(m_ui->deviceBox, SIGNAL(activated(int)), this, SLOT(deviceChanged(int)));
     connect(m_ui->volumeSlider, SIGNAL(valueChanged(int)), this, SLOT(volumeChanged(int)));
     connect(m_ui->bufferSpin, SIGNAL(valueChanged(int)), this, SLOT(bufferChanged(int)));
     connect(m_ui->octaveSpin, SIGNAL(valueChanged(int)), this, SLOT(octaveChanged(int)));
     connect(this, &MainWindow::underrunDetected, this, &MainWindow::underrunMessage );
+    connect(this, &MainWindow::stallDetected, this, &MainWindow::stallMessage );
+    connect(&m_stallDetector, &QTimer::timeout, this, [=]{
+        if (m_running) {
+            if (m_synth->lastBufferSize() == 0) {
+                emit stallDetected();
+            }
+            m_synth->resetLastBufferSize();
+        }
+    });
 }
 
 #if QT_VERSION < QT_VERSION_CHECK(6,0,0)
@@ -127,7 +138,7 @@ void MainWindow::initializeAudio(const QAudioDevice &deviceInfo)
     m_audioOutput.reset(new QAudioSink(deviceInfo, m_format));
     QObject::connect(m_audioOutput.data(), &QAudioSink::stateChanged, this, [=](QAudio::State state){
 #endif
-        qDebug() << "Audio Output state:" << state << m_audioOutput->error();
+        qDebug() << "Audio Output state:" << state << "error:" << m_audioOutput->error();
         if (m_running && (m_audioOutput->error() == QAudio::UnderrunError)) {
             emit underrunDetected();
         }
@@ -139,12 +150,16 @@ void MainWindow::initializeAudio(const QAudioDevice &deviceInfo)
              << "bytes," << bufferTime << "milliseconds";
     volumeChanged(m_ui->volumeSlider->value());
     octaveChanged(m_ui->octaveSpin->value());
-    QTimer::singleShot(bufferTime * 2, this, [=]{ m_running = true; });
+    QTimer::singleShot(bufferTime * 2, this, [=]{
+        m_running = true;
+        m_stallDetector.start(bufferTime * 4);
+     });
 }
 
 void MainWindow::deviceChanged(int index)
 {
     qDebug() << Q_FUNC_INFO << index;
+    m_stallDetector.stop();
     m_audioOutput->stop();
     if(!m_synth.isNull()) {
         m_synth->stop();
@@ -185,6 +200,15 @@ void MainWindow::underrunMessage()
     m_running = false;
     QMessageBox::warning( this, "Underrun Error",
                           "Audio buffer underrun errors have been detected."
-                          "Please increase the buffer time to avoid them in the future.");
+                          " Please increase the buffer time to avoid this problem.");
     m_running = true;
+}
+
+void MainWindow::stallMessage()
+{
+    QMessageBox::critical( this, "Audio Output Stalled",
+                           "Audio output is stalled right now. Sound cannot be produced."
+                           " Please increase the buffer time to avoid this problem.");
+    m_running = false;
+    m_stallDetector.stop();
 }

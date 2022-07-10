@@ -37,6 +37,8 @@ public:
 	qint64 bytesAvailable() const override;
 
     void setOctave(int newOctave);
+    qint64 lastBufferSize() const;
+    void resetLastBufferSize();
 
 public slots:
     void start();

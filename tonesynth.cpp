@@ -68,6 +68,16 @@ void ToneSynthesizer::noteOff()
     m_active = false;
 }
 
+qint64 ToneSynthesizer::lastBufferSize() const
+{
+    return m_lastBufferSize;
+}
+
+void ToneSynthesizer::resetLastBufferSize()
+{
+    m_lastBufferSize = 0;
+}
+
 void ToneSynthesizer::setOctave(int newOctave)
 {
     m_octave = newOctave;

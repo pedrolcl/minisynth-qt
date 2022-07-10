@@ -31,6 +31,7 @@
 #include <QPushButton>
 #include <QSlider>
 #include <QScopedPointer>
+#include <QTimer>
 
 #include <QAudioFormat>
 #if QT_VERSION < QT_VERSION_CHECK(6,0,0)
@@ -57,6 +58,7 @@ public:
 
 signals:
     void underrunDetected();
+    void stallDetected();
 
 private:
     void initializeWindow();
@@ -72,6 +74,7 @@ private slots:
     void bufferChanged(int value);
     void octaveChanged(int value);
     void underrunMessage();
+    void stallMessage();
 
 private:
     Ui::MainWindow *m_ui;
@@ -84,6 +87,7 @@ private:
 #else
     QScopedPointer<QAudioSink> m_audioOutput;
 #endif
+    QTimer m_stallDetector;
 };
 
 #endif // MAINWINDOW_H
