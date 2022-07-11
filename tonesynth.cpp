@@ -26,7 +26,7 @@ ToneSynthesizer::ToneSynthesizer(const QAudioFormat &format):
     m_active(false),
     m_octave(3)
 {
-    qDebug() << Q_FUNC_INFO;
+    //qDebug() << Q_FUNC_INFO;
     if (format.isValid()) {
         m_format = format;
     }
@@ -120,12 +120,12 @@ qint64 ToneSynthesizer::writeData(const char *data, qint64 len)
 
 qint64 ToneSynthesizer::size() const
 {
-    qDebug() << Q_FUNC_INFO;
+    //qDebug() << Q_FUNC_INFO;
 	return std::numeric_limits<qint64>::max();
 }
 
 qint64 ToneSynthesizer::bytesAvailable() const
 {
-    qDebug() << Q_FUNC_INFO;
+    //qDebug() << Q_FUNC_INFO;
 	return std::numeric_limits<qint64>::max();
 }

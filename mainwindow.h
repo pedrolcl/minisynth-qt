@@ -36,10 +36,8 @@
 #include <QAudioFormat>
 #if QT_VERSION < QT_VERSION_CHECK(6,0,0)
 #include <QAudioOutput>
-#include <QAudioDeviceInfo>
 #else
 #include <QAudioSink>
-#include <QAudioDevice>
 #endif
 
 #include "tonesynth.h"
@@ -62,11 +60,7 @@ signals:
 
 private:
     void initializeWindow();
-#if QT_VERSION < QT_VERSION_CHECK(6,0,0)
-    void initializeAudio(const QAudioDeviceInfo &deviceInfo);
-#else
-    void initializeAudio(const QAudioDevice &deviceInfo);
-#endif
+	void initializeAudio();
 
 private slots:
     void deviceChanged(int index);
