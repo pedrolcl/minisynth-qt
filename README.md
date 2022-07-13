@@ -5,6 +5,9 @@ This project is a proof of concept, and a minimalist multiplatform music [monosy
 ![Screenshot](screenshot.png)
 
 The synth is implemented in the `ToneSynthesizer` class, that expects an `AudioFormat` defining floating point samples, a single channel (mono), and a sample rate of 44100 Hz (very typical specifications). The 13 precomputed note frequencies reside on a table initialized with an [equal temperament](https://en.wikipedia.org/wiki/Equal_temperament#Twelve-tone_equal_temperament) chromatic scale. The notes may be transposed from octave 0 to octave 9 in [scientific pitch notation](https://en.wikipedia.org/wiki/Scientific_pitch_notation) octave denomination.
+There is no MIDI Input here. The only way to trigger sounds is using the note buttons.
+
+Two alternative projects using a similar architecture, but leveraging much better music synthesizers and MIDI Input are [FluidLite-QtMultimedia](https://github.com/pedrolcl/fluidlite-qtmultimedia) and [Multiplatform-SonivoxEAS](https://github.com/pedrolcl/multiplatform-sonivoxeas).
 
 The [Qt Multimedia](https://doc.qt.io/qt-6.2/multimediaoverview.html) [audio output](https://doc.qt.io/qt-6.2/audiooverview.html#low-level-audio-playback-and-recording) classes allow raw access to the system's audio output facilities, allowing applications to write raw data to speakers or other devices. This prototype has a control to choose the audio device, the volume level and to request a buffer size (by default 50 milliseconds).
 
