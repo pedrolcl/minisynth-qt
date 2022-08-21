@@ -23,12 +23,16 @@
 
 ToneSynthesizer::ToneSynthesizer(const QAudioFormat &format):
     QIODevice(),
-    m_active(false),
-    m_octave(3)
+    m_octave(3),
+    m_envelState(EnvelopeState::silentState),
+    m_envelVolume(0.0)
 {
     //qDebug() << Q_FUNC_INFO;
     if (format.isValid()) {
         m_format = format;
+        m_attackTime = (quint64) (0.02 * format.sampleRate());
+        m_releaseTime = m_attackTime;
+        m_envelDelta = 1.0 / m_attackTime;
     }
 }
 
@@ -48,13 +52,16 @@ void ToneSynthesizer::stop()
 
 void ToneSynthesizer::noteOn(const QString &note)
 {
-    qDebug() << Q_FUNC_INFO << note;
+    //qDebug() << Q_FUNC_INFO << note;
     if (m_freq.contains(note)) {
-        m_active = true;
         qreal noteFreq = qPow(2, m_octave - 3) * m_freq[note];
         qreal cyclesPerSample = noteFreq / m_format.sampleRate();
-        m_angleDelta = cyclesPerSample * 2.0 * M_PI;
-        m_currentAngle = 0.0;
+        m_angleDelta = cyclesPerSample * 2.0 * M_PI; // phase increment
+        m_currentAngle = 0.0; // phase
+
+        m_envelState = EnvelopeState::attackState;
+        m_envelCount = m_attackTime;
+        m_envelVolume = 0.0;
     }
 }
 
@@ -65,7 +72,9 @@ void ToneSynthesizer::noteOff()
              << m_lastBufferSize << "bytes,"
              << m_format.durationForBytes(m_lastBufferSize) / 1000
              << "milliseconds";
-    m_active = false;
+
+    m_envelState = EnvelopeState::releaseState;
+    m_envelCount = m_releaseTime;
 }
 
 qint64 ToneSynthesizer::lastBufferSize() const
@@ -96,10 +105,43 @@ qint64 ToneSynthesizer::readData(char *data, qint64 maxlen)
     qint64 length = (maxlen / channelBytes) * channelBytes;
     qint64 buflen = length;
     unsigned char *ptr = reinterpret_cast<unsigned char *>(data);
-    while (length > 0){
+
+    while (length > 0) {
         float currentSample = 0.0;
-        if (m_active) {
-            currentSample = qSin(m_currentAngle);
+        switch (m_envelState)
+        {
+        case EnvelopeState::silentState :
+            break;
+        case EnvelopeState::attackState :
+            if (m_envelCount > 0)
+            {
+                m_envelVolume += m_envelDelta;
+                m_envelCount--;
+            }
+            else
+            {
+                m_envelVolume = 1.0;
+                m_envelState = EnvelopeState::sustainState;
+            }
+            break;
+        case EnvelopeState::sustainState :
+            break;
+        case EnvelopeState::releaseState :
+            if (m_envelCount > 0)
+            {
+                m_envelVolume -= m_envelDelta;
+                m_envelCount--;
+            }
+            else
+            {
+                m_envelVolume = 0.0;
+                m_envelState = EnvelopeState::silentState;
+            }
+            break;
+        }
+
+        if (m_envelState != EnvelopeState::silentState) {
+            currentSample = m_envelVolume * qSin(m_currentAngle);
             m_currentAngle += m_angleDelta;
         }
         *reinterpret_cast<float *>(ptr) = currentSample;

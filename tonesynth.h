@@ -30,6 +30,14 @@ class ToneSynthesizer : public QIODevice
     Q_OBJECT
 
 public:
+    enum class EnvelopeState : int {
+        silentState,
+        attackState,
+        sustainState,
+        releaseState
+    };
+    Q_ENUM(EnvelopeState)
+
     ToneSynthesizer(const QAudioFormat &format);
     qint64 readData(char *data, qint64 maxlen) override;
     qint64 writeData(const char *data, qint64 len) override;
@@ -48,7 +56,6 @@ public slots:
 
 private:
     QAudioFormat m_format;
-    bool m_active;
     int m_octave; /* octave 3 */
     /* Equal temperament scale */
     const QMap<QString, qreal> m_freq{
@@ -69,6 +76,13 @@ private:
     qreal m_angleDelta;
     qreal m_currentAngle;
     qint64 m_lastBufferSize;
+    // Envelope generation
+    EnvelopeState m_envelState;
+    qreal m_envelVolume;
+    qreal m_envelDelta;
+    quint64 m_envelCount;
+    quint64 m_attackTime;
+    quint64 m_releaseTime;
 };
 
 #endif // TONESYNTH_H
