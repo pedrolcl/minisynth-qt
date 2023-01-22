@@ -39,4 +39,4 @@ Tests built with Qt 5.15.2, Qt 6.2.4 and Qt 6.4-beta1
 
 [^1]: Very high latency. Bug closed in 6.4 ( [report](https://bugreports.qt.io/browse/QTBUG-101169) ).
 
-You may try a [WebAssembly demo](pedrolcl.github.io/minisynth-qt/)
+You may try a [WebAssembly demo](https://pedrolcl.github.io/minisynth-qt/)
