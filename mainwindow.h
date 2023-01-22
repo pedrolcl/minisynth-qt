@@ -67,8 +67,10 @@ private slots:
     void volumeChanged(int value);
     void bufferChanged(int value);
     void octaveChanged(int value);
+#if !defined(Q_OS_WASM)
     void underrunMessage();
     void stallMessage();
+#endif
 
 private:
     Ui::MainWindow *m_ui;
@@ -81,7 +83,9 @@ private:
 #else
     QScopedPointer<QAudioSink> m_audioOutput;
 #endif
+#if !defined(Q_OS_WASM)
     QTimer m_stallDetector;
+#endif
 };
 
 #endif // MAINWINDOW_H

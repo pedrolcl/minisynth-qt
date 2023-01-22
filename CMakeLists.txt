@@ -40,6 +40,10 @@ target_link_libraries(minisynth-qt PRIVATE
     Qt${QT_VERSION_MAJOR}::Multimedia
 )
 
+if (CMAKE_SYSTEM_NAME MATCHES "Emscripten")
+    target_link_options(minisynth-qt PUBLIC -sASYNCIFY -Os)
+endif()
+
 if(QT_VERSION_MAJOR EQUAL 6)
     qt_finalize_target(minisynth-qt)
 endif()

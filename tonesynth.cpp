@@ -17,7 +17,7 @@
 */
 
 #include <limits>
-#include <QDebug>
+//#include <QDebug>
 #include <QtMath>
 #include "tonesynth.h"
 
@@ -38,13 +38,13 @@ ToneSynthesizer::ToneSynthesizer(const QAudioFormat &format):
 
 void ToneSynthesizer::start()
 {
-    qDebug() << Q_FUNC_INFO;
+    //qDebug() << Q_FUNC_INFO;
     open(QIODevice::ReadOnly | QIODevice::Unbuffered);
 }
 
 void ToneSynthesizer::stop()
 {
-    qDebug() << Q_FUNC_INFO;
+    //qDebug() << Q_FUNC_INFO;
     if (isOpen()) {
         close();
     }
@@ -67,12 +67,11 @@ void ToneSynthesizer::noteOn(const QString &note)
 
 void ToneSynthesizer::noteOff()
 {
-    qDebug() << Q_FUNC_INFO
-             << "last synth period:"
-             << m_lastBufferSize << "bytes,"
-             << m_format.durationForBytes(m_lastBufferSize) / 1000
-             << "milliseconds";
-
+//    qDebug() << Q_FUNC_INFO
+//             << "last synth period:"
+//             << m_lastBufferSize << "bytes,"
+//             << m_format.durationForBytes(m_lastBufferSize) / 1000
+//             << "milliseconds";
     m_envelState = EnvelopeState::releaseState;
     m_envelCount = m_releaseTime;
 }
@@ -156,7 +155,7 @@ qint64 ToneSynthesizer::writeData(const char *data, qint64 len)
 {
     Q_UNUSED(data);
     Q_UNUSED(len);
-    qDebug() << Q_FUNC_INFO;
+    //qDebug() << Q_FUNC_INFO;
 	return 0;
 }
 

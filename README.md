@@ -30,10 +30,13 @@ Tests built with Qt 5.15.2, Qt 6.2.4 and Qt 6.4-beta1
 
 :question: means that the results are not conclusive.
 
-| Platform:      | Qt 5.x             | Qt 6.0 - 6.3       | Qt 6.4-beta        |
+| Platform:      | Qt 5.x             | Qt 6.0 - 6.3       | Qt 6.4             |
 | -------------- | ------------------ | ------------------ | ------------------ |
 | Linux          | :heavy_check_mark: | :x: [^1]           | :heavy_check_mark: |
 | macOS          | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: |
 | Windows        | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: |
+| WebAssembly    | :x:                | :question:         | :heavy_check_mark: |
 
 [^1]: Very high latency. Bug closed in 6.4 ( [report](https://bugreports.qt.io/browse/QTBUG-101169) ).
+
+You may try a [WebAssembly demo](pedrolcl.github.io/minisynth-qt/)
