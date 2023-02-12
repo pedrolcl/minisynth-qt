@@ -12,7 +12,14 @@
     <title>minisynth-qt WebAssembly Demo</title>
     <style>
       /* Make the html body cover the entire (visual) viewport with no scroll bars. */
-      html, body { padding: 0; margin: 0; overflow:hidden; height: 100% }
+      html, body {
+        padding: 0;
+        margin: 0;
+        overflow: hidden;
+        height: 100%;
+        font-family: "Open Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
+        font-size: 16px;
+      }
       canvas {
         margin: 0px auto;
         width: 500px;
@@ -32,7 +39,8 @@
     </figure>
     <h1 style="text-align: center;">MiniSynth-Qt WebAssembly Demo</h1>
     <canvas id="qtcanvas" width="500" height="370"></canvas>
-    <p style="text-align: center;">Please, click anywhere on the page background to enable the audio output.</p>
+    <p style="text-align: center;">Please, click anywhere on the page background to enable audio output.<br/>
+    <a href="https://github.com/pedrolcl/minisynth-qt">View on GitHub</a></p>
     <script type='text/javascript'>
         let qtLoader = undefined;
         function init() {
