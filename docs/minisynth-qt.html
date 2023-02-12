@@ -9,12 +9,16 @@
         and Qt device independent pixels. -->
     <meta name="viewport" content="width=device-width, height=device-height, user-scalable=0"/>
 
-    <title>minisynth-qt</title>
+    <title>minisynth-qt WebAssembly Demo</title>
     <style>
       /* Make the html body cover the entire (visual) viewport with no scroll bars. */
       html, body { padding: 0; margin: 0; overflow:hidden; height: 100% }
-      /* Make the canvas cover the entire body */
-      canvas { height:100%; width:100%; }
+      canvas {
+        margin: 0px auto;
+        width: 500px;
+        height: 370px;
+        box-shadow: rgb(153, 153, 153) 0px 0px 20px;
+      }
     </style>
   </head>
   <body onload="init()">
@@ -26,8 +30,9 @@
         <noscript>JavaScript is disabled. Please enable JavaScript to use this application.</noscript>
       </center>
     </figure>
-    <canvas id="qtcanvas"></canvas>
-
+    <h1 style="text-align: center;">MiniSynth-Qt WebAssembly Demo</h1>
+    <canvas id="qtcanvas" width="500" height="370"></canvas>
+    <p style="text-align: center;">Please, click anywhere on the page background to enable the audio output.</p>
     <script type='text/javascript'>
         let qtLoader = undefined;
         function init() {
