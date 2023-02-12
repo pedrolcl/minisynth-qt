@@ -22,7 +22,7 @@ The minimal audio buffer size for each system depends on the system environment 
 
 An useful conclusion from this prototype is that the infrastructure may be usable across platforms and Qt versions. Some exceptions are Qt versions between Qt 6.0 and Qt 6.3 (both inclusive) which are not suitable on Linux.
 
-Tests built with Qt 5.15.2, Qt 6.2.4 and Qt 6.4-beta1
+Tests built with Qt 5.15.2, Qt 6.2.4 and Qt 6.4.x
 
 :heavy_check_mark: means that it is usable.
 
