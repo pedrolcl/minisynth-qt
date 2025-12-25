@@ -1,6 +1,6 @@
 /*
     Minimal Synthesizer for Qt applications
-    Copyright (C) 2022-2023 Pedro Lopez-Cabanillas <plcl@users.sf.net>
+    Copyright (C) 2022-2025 Pedro Lopez-Cabanillas <plcl@users.sf.net>
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -17,6 +17,7 @@
 */
 
 //#include <QDebug>
+#include <QKeyEvent>
 #include <QtMath>
 #if !defined(Q_OS_WASM)
 #include <QMessageBox>
@@ -38,9 +39,9 @@ MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
     , m_ui(new Ui::MainWindow)
 #if defined(Q_OS_WASM)
-    , m_bufferTime(150)
-#else
     , m_bufferTime(100)
+#else
+    , m_bufferTime(50)
 #endif
     , m_running(false)
 {
@@ -249,3 +250,19 @@ void MainWindow::stallMessage()
     m_stallDetector.stop();
 }
 #endif
+
+void MainWindow::keyPressEvent(QKeyEvent *event)
+{
+    const int k = static_cast<int>(event->key());
+    if (m_keys.contains(k) && !event->isAutoRepeat() && !m_synth->isPlaying(m_keys[k])) {
+        m_synth->noteOn(m_keys[k]);
+    }
+}
+
+void MainWindow::keyReleaseEvent(QKeyEvent *event)
+{
+    const auto k = event->key();
+    if (m_keys.contains(k) && m_synth->isPlaying(m_keys[k])) {
+        m_synth->noteOff();
+    }
+}

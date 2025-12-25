@@ -1,6 +1,6 @@
 /*
     Minimal Synthesizer for Qt applications
-    Copyright (C) 2022-2023 Pedro Lopez-Cabanillas <plcl@users.sf.net>
+    Copyright (C) 2022-2025 Pedro Lopez-Cabanillas <plcl@users.sf.net>
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -47,6 +47,7 @@ public:
     void setOctave(int newOctave);
     qint64 lastBufferSize() const;
     void resetLastBufferSize();
+    bool isPlaying(const QString k);
 
 public slots:
     void start();
@@ -58,6 +59,7 @@ private:
     QAudioFormat m_format;
     int m_octave; /* octave 3 */
     /* Equal temperament scale */
+    // clang-format off
     const QMap<QString, qreal> m_freq{
         {"C'",	261.626},
         {"B",	246.942},
@@ -73,6 +75,8 @@ private:
         {"C#",	138.591},
         {"C",	130.813}
     };
+    // clang-format on
+    QString m_currentNote{};
     qreal m_angleDelta;
     qreal m_currentAngle;
     qint64 m_lastBufferSize;
