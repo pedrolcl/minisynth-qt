@@ -1,6 +1,6 @@
 /*
     Minimal Synthesizer for Qt applications
-    Copyright (C) 2022-2023 Pedro Lopez-Cabanillas <plcl@users.sf.net>
+    Copyright (C) 2022-2025 Pedro Lopez-Cabanillas <plcl@users.sf.net>
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -16,9 +16,10 @@
     along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include <limits>
 //#include <QDebug>
 #include <QtMath>
+#include <limits>
+
 #include "tonesynth.h"
 
 ToneSynthesizer::ToneSynthesizer(const QAudioFormat &format):
@@ -54,6 +55,7 @@ void ToneSynthesizer::noteOn(const QString &note)
 {
     //qDebug() << Q_FUNC_INFO << note;
     if (m_freq.contains(note)) {
+        m_currentNote = note;
         qreal noteFreq = qPow(2, m_octave - 3) * m_freq[note];
         qreal cyclesPerSample = noteFreq / m_format.sampleRate();
         m_angleDelta = cyclesPerSample * 2.0 * M_PI; // phase increment
@@ -67,13 +69,11 @@ void ToneSynthesizer::noteOn(const QString &note)
 
 void ToneSynthesizer::noteOff()
 {
-//    qDebug() << Q_FUNC_INFO
-//             << "last synth period:"
-//             << m_lastBufferSize << "bytes,"
-//             << m_format.durationForBytes(m_lastBufferSize) / 1000
-//             << "milliseconds";
+    // qDebug() << Q_FUNC_INFO << "last synth period:" << m_lastBufferSize << "bytes,"
+    //          << m_format.durationForBytes(m_lastBufferSize) / 1000 << "milliseconds";
     m_envelState = EnvelopeState::releaseState;
     m_envelCount = m_releaseTime;
+    m_currentNote = "";
 }
 
 qint64 ToneSynthesizer::lastBufferSize() const
@@ -84,6 +84,11 @@ qint64 ToneSynthesizer::lastBufferSize() const
 void ToneSynthesizer::resetLastBufferSize()
 {
     m_lastBufferSize = 0;
+}
+
+bool ToneSynthesizer::isPlaying(const QString k)
+{
+    return k == m_currentNote;
 }
 
 void ToneSynthesizer::setOctave(int newOctave)

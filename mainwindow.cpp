@@ -1,6 +1,6 @@
 /*
     Minimal Synthesizer for Qt applications
-    Copyright (C) 2022-2023 Pedro Lopez-Cabanillas <plcl@users.sf.net>
+    Copyright (C) 2022-2025 Pedro Lopez-Cabanillas <plcl@users.sf.net>
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -17,6 +17,7 @@
 */
 
 //#include <QDebug>
+#include <QKeyEvent>
 #include <QtMath>
 #if !defined(Q_OS_WASM)
 #include <QMessageBox>
@@ -38,16 +39,18 @@ MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
     , m_ui(new Ui::MainWindow)
 #if defined(Q_OS_WASM)
-    , m_bufferTime(150)
-#else
     , m_bufferTime(100)
+#else
+    , m_bufferTime(50)
 #endif
     , m_running(false)
 {
     //qDebug() << Q_FUNC_INFO;
     m_ui->setupUi(this);
+    initializeFormat();
+    initializeAudio();
     initializeWindow();
-	initializeAudio();
+    initializeDevice();
 }
 
 MainWindow::~MainWindow()
@@ -57,92 +60,49 @@ MainWindow::~MainWindow()
     m_stallDetector.stop();
 #endif
     m_audioOutput->stop();
-    if(!m_synth.isNull()) {
+    if (m_synth) {
         m_synth->stop();
     }
+    delete m_audioOutput;
+    delete m_synth;
     delete m_ui;
 }
 
-void MainWindow::initializeWindow()
+void MainWindow::initializeFormat()
 {
     //qDebug() << Q_FUNC_INFO;
-    m_format.setSampleRate(44100);
-#if QT_VERSION < QT_VERSION_CHECK(6,0,0)
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
     m_format.setChannelCount(1);
     m_format.setSampleSize(sizeof(float) * CHAR_BIT);
     m_format.setCodec("audio/pcm");
     m_format.setByteOrder(QAudioFormat::LittleEndian);
     m_format.setSampleType(QAudioFormat::Float);
-    const QAudioDeviceInfo &defaultDeviceInfo = QAudioDeviceInfo::defaultOutputDevice();
-    m_ui->deviceBox->addItem(defaultDeviceInfo.deviceName(), QVariant::fromValue(defaultDeviceInfo));
-    for (auto &deviceInfo: QAudioDeviceInfo::availableDevices(QAudio::AudioOutput)) {
-        if (deviceInfo != defaultDeviceInfo && deviceInfo.isFormatSupported(m_format))
-            m_ui->deviceBox->addItem(deviceInfo.deviceName(), QVariant::fromValue(deviceInfo));
-    }
-	m_ui->deviceBox->setCurrentText(defaultDeviceInfo.deviceName());
+    m_defaultDeviceInfo = QAudioDeviceInfo::defaultOutputDevice();
 #else
     m_format.setChannelConfig(QAudioFormat::ChannelConfigMono);
     m_format.setSampleFormat(QAudioFormat::Float);
-    const QAudioDevice &defaultDeviceInfo = QMediaDevices::defaultAudioOutput();
-    m_ui->deviceBox->addItem(defaultDeviceInfo.description(), QVariant::fromValue(defaultDeviceInfo));
-    for (auto &deviceInfo: QMediaDevices::audioOutputs()) {
-        if (deviceInfo != defaultDeviceInfo && deviceInfo.isFormatSupported(m_format))
-            m_ui->deviceBox->addItem(deviceInfo.description(), QVariant::fromValue(deviceInfo));
-    }
-	m_ui->deviceBox->setCurrentText(defaultDeviceInfo.description());
+    m_defaultDeviceInfo = QMediaDevices::defaultAudioOutput();
 #endif
-    m_synth.reset(new ToneSynthesizer(m_format));
-    m_ui->bufferSpin->setValue(m_bufferTime);
-    connect(m_ui->deviceBox, SIGNAL(activated(int)), this, SLOT(deviceChanged(int)));
-    connect(m_ui->volumeSlider, SIGNAL(valueChanged(int)), this, SLOT(volumeChanged(int)));
-    connect(m_ui->bufferSpin, SIGNAL(valueChanged(int)), this, SLOT(bufferChanged(int)));
-    connect(m_ui->octaveSpin, SIGNAL(valueChanged(int)), this, SLOT(octaveChanged(int)));
-#if !defined(Q_OS_WASM)
-    connect(this, &MainWindow::underrunDetected, this, &MainWindow::underrunMessage );
-    connect(this, &MainWindow::stallDetected, this, &MainWindow::stallMessage );
-    connect(&m_stallDetector, &QTimer::timeout, this, [=]{
-        if (m_running) {
-            if (m_synth->lastBufferSize() == 0) {
-                emit stallDetected();
-            }
-            m_synth->resetLastBufferSize();
-        }
-    });
-#endif
-    auto buttons = findChildren<QPushButton*>();
-    foreach(const auto btn, buttons) {
-        connect(btn, &QPushButton::pressed, this, [=]{ m_synth->noteOn(btn->text()); });
-        connect(btn, &QPushButton::released, m_synth.get(), &ToneSynthesizer::noteOff);
-    }
+    m_format.setSampleRate(44100);
+    m_currentDeviceInfo = m_defaultDeviceInfo;
 }
 
 void MainWindow::initializeAudio()
 {
-    //qDebug() << Q_FUNC_INFO << m_ui->deviceBox->currentText();
-	m_running = false;
-#if QT_VERSION < QT_VERSION_CHECK(6,0,0)
-	const QAudioDeviceInfo deviceInfo = m_ui->deviceBox->currentData().value<QAudioDeviceInfo>();
-#else
-	const QAudioDevice deviceInfo = m_ui->deviceBox->currentData().value<QAudioDevice>();
-#endif
-    if (!deviceInfo.isFormatSupported(m_format)) {
-#if !defined(Q_OS_WASM)
-        QMessageBox::warning(this, "Audio format not supported",
-                             "The selected audio device does not support the synth's audio format. "
-                             "Please select another device." );
-#endif
-        return;
-    }
-    qint64 bufferLength = m_format.bytesForDuration( m_bufferTime * 1000 );
-//    qDebug() << "requested buffer size:" << bufferLength
-//             << "bytes," << m_bufferTime << "milliseconds";
+    //qDebug() << Q_FUNC_INFO;
+    m_running = false;
+
+    m_synth = new ToneSynthesizer(m_format);
+    qint64 bufferLength = m_format.bytesForDuration(m_bufferTime * 1000);
+    // qDebug() << "requested buffer size:" << bufferLength << "bytes," << m_bufferTime
+    //          << "milliseconds";
     m_synth->start();
 #if QT_VERSION < QT_VERSION_CHECK(6,0,0)
-    m_audioOutput.reset(new QAudioOutput(deviceInfo, m_format));
-    QObject::connect(m_audioOutput.data(), &QAudioOutput::stateChanged, this, [=](QAudio::State state){
+    m_audioOutput = new QAudioOutput(m_currentDeviceInfo, m_format);
+    QObject::connect(m_audioOutput, &QAudioOutput::stateChanged, this, [=](QAudio::State state) {
 #else
-    m_audioOutput.reset(new QAudioSink(deviceInfo, m_format));
-    QObject::connect(m_audioOutput.data(), &QAudioSink::stateChanged, this, [=](QAudio::State state){
+    m_audioOutput = new QAudioSink(m_currentDeviceInfo, m_format);
+    QObject::connect(m_audioOutput, &QAudioSink::stateChanged, this, [=](QAudio::State state) {
 #endif
         //qDebug() << "Audio Output state:" << state << "error:" << m_audioOutput->error();
         if (m_running && (m_audioOutput->error() == QAudio::UnderrunError)) {
@@ -150,10 +110,10 @@ void MainWindow::initializeAudio()
         }
     });
     m_audioOutput->setBufferSize(bufferLength);
-    m_audioOutput->start(m_synth.get());
+    m_audioOutput->start(m_synth);
     auto bufferTime = m_format.durationForBytes(m_audioOutput->bufferSize()) / 1000;
-//    qDebug() << "applied buffer size:" << m_audioOutput->bufferSize()
-//             << "bytes," << bufferTime << "milliseconds";
+    // qDebug() << "applied buffer size:" << m_audioOutput->bufferSize() << "bytes," << bufferTime
+    //          << "milliseconds";
     volumeChanged(m_ui->volumeSlider->value());
     octaveChanged(m_ui->octaveSpin->value());
 #if !defined(Q_OS_WASM)
@@ -164,6 +124,70 @@ void MainWindow::initializeAudio()
 #endif
 }
 
+void MainWindow::initializeWindow()
+{
+    //qDebug() << Q_FUNC_INFO;
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
+    m_ui->deviceBox->addItem(m_defaultDeviceInfo.deviceName(),
+                             QVariant::fromValue(m_defaultDeviceInfo));
+    for (auto &deviceInfo : QAudioDeviceInfo::availableDevices(QAudio::AudioOutput)) {
+        if (deviceInfo != m_defaultDeviceInfo && deviceInfo.isFormatSupported(m_format))
+            m_ui->deviceBox->addItem(deviceInfo.deviceName(), QVariant::fromValue(deviceInfo));
+    }
+    m_ui->deviceBox->setCurrentText(m_defaultDeviceInfo.deviceName());
+#else
+    m_ui->deviceBox->addItem(m_defaultDeviceInfo.description(),
+                             QVariant::fromValue(m_defaultDeviceInfo));
+    for (auto &deviceInfo : QMediaDevices::audioOutputs()) {
+        if (deviceInfo != m_defaultDeviceInfo && deviceInfo.isFormatSupported(m_format))
+            m_ui->deviceBox->addItem(deviceInfo.description(), QVariant::fromValue(deviceInfo));
+    }
+    m_ui->deviceBox->setCurrentText(m_defaultDeviceInfo.description());
+#endif
+
+    m_ui->bufferSpin->setValue(m_bufferTime);
+    connect(m_ui->deviceBox, SIGNAL(activated(int)), this, SLOT(deviceChanged(int)));
+    connect(m_ui->volumeSlider, SIGNAL(valueChanged(int)), this, SLOT(volumeChanged(int)));
+    connect(m_ui->bufferSpin, SIGNAL(valueChanged(int)), this, SLOT(bufferChanged(int)));
+    connect(m_ui->octaveSpin, SIGNAL(valueChanged(int)), this, SLOT(octaveChanged(int)));
+#if !defined(Q_OS_WASM)
+    connect(this, &MainWindow::underrunDetected, this, &MainWindow::underrunMessage);
+    connect(this, &MainWindow::stallDetected, this, &MainWindow::stallMessage);
+    connect(&m_stallDetector, &QTimer::timeout, this, [=] {
+        if (m_running) {
+            if (m_synth->lastBufferSize() == 0) {
+                emit stallDetected();
+            }
+            m_synth->resetLastBufferSize();
+        }
+    });
+#endif
+    auto buttons = findChildren<QPushButton *>();
+    foreach (const auto btn, buttons) {
+        connect(btn, &QPushButton::pressed, this, [=] { m_synth->noteOn(btn->text()); });
+        connect(btn, &QPushButton::released, this, [=] { m_synth->noteOff(); });
+    }
+}
+
+void MainWindow::initializeDevice()
+{
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
+    const QAudioDeviceInfo deviceInfo = m_ui->deviceBox->currentData().value<QAudioDeviceInfo>();
+#else
+    const QAudioDevice deviceInfo = m_ui->deviceBox->currentData().value<QAudioDevice>();
+#endif
+    if (!deviceInfo.isFormatSupported(m_format)) {
+#if !defined(Q_OS_WASM)
+        QMessageBox::warning(this,
+                             "Audio format not supported",
+                             "The selected audio device does not support the synth's audio format. "
+                             "Please select another device.");
+#endif
+        return;
+    }
+    m_currentDeviceInfo = deviceInfo;
+}
+
 void MainWindow::deviceChanged(int index)
 {
     //qDebug() << Q_FUNC_INFO << m_ui->deviceBox->itemText(index);
@@ -171,9 +195,15 @@ void MainWindow::deviceChanged(int index)
     m_stallDetector.stop();
 #endif
     m_audioOutput->stop();
-    if(!m_synth.isNull()) {
+    if (m_synth) {
         m_synth->stop();
     }
+    delete m_synth;
+    delete m_audioOutput;
+    m_synth = nullptr;
+    m_audioOutput = nullptr;
+
+    initializeDevice();
     initializeAudio();
 }
 
@@ -220,3 +250,19 @@ void MainWindow::stallMessage()
     m_stallDetector.stop();
 }
 #endif
+
+void MainWindow::keyPressEvent(QKeyEvent *event)
+{
+    const int k = static_cast<int>(event->key());
+    if (m_keys.contains(k) && !event->isAutoRepeat() && !m_synth->isPlaying(m_keys[k])) {
+        m_synth->noteOn(m_keys[k]);
+    }
+}
+
+void MainWindow::keyReleaseEvent(QKeyEvent *event)
+{
+    const auto k = event->key();
+    if (m_keys.contains(k) && m_synth->isPlaying(m_keys[k])) {
+        m_synth->noteOff();
+    }
+}

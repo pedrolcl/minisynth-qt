@@ -1,6 +1,6 @@
 /*
     Minimal Synthesizer for Qt applications
-    Copyright (C) 2022-2023 Pedro Lopez-Cabanillas <plcl@users.sf.net>
+    Copyright (C) 2022-2025 Pedro Lopez-Cabanillas <plcl@users.sf.net>
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -54,13 +54,19 @@ public:
     MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
 
+protected:
+    void keyPressEvent(QKeyEvent *event) override;
+    void keyReleaseEvent(QKeyEvent *event) override;
+
+private:
+    void initializeFormat();
+    void initializeAudio();
+    void initializeWindow();
+    void initializeDevice();
+
 signals:
     void underrunDetected();
     void stallDetected();
-
-private:
-    void initializeWindow();
-	void initializeAudio();
 
 private slots:
     void deviceChanged(int index);
@@ -77,12 +83,34 @@ private:
     QAudioFormat m_format;
     int m_bufferTime;
     bool m_running;
-    QScopedPointer<ToneSynthesizer> m_synth;
+    ToneSynthesizer *m_synth;
+
+    // clang-format off
+    const QMap<int, QString> m_keys{
+        {Qt::Key_K, "C'"},
+        {Qt::Key_J, "B"},
+        {Qt::Key_U, "A#"},
+        {Qt::Key_H, "A"},
+        {Qt::Key_Y, "G#"},
+        {Qt::Key_G, "G"},
+        {Qt::Key_T, "F#"},
+        {Qt::Key_F, "F"},
+        {Qt::Key_D, "E"},
+        {Qt::Key_E, "D#"},
+        {Qt::Key_S, "D"},
+        {Qt::Key_W, "C#"},
+        {Qt::Key_A, "C"}
+    };
+    // clang-format on
+
 #if QT_VERSION < QT_VERSION_CHECK(6,0,0)
-    QScopedPointer<QAudioOutput> m_audioOutput;
+    QAudioDeviceInfo m_defaultDeviceInfo, m_currentDeviceInfo;
+    QAudioOutput *m_audioOutput;
 #else
-    QScopedPointer<QAudioSink> m_audioOutput;
+    QAudioDevice m_defaultDeviceInfo, m_currentDeviceInfo;
+    QAudioSink *m_audioOutput;
 #endif
+
 #if !defined(Q_OS_WASM)
     QTimer m_stallDetector;
 #endif

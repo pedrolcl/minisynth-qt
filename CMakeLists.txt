@@ -1,6 +1,6 @@
-cmake_minimum_required(VERSION 3.5)
+cmake_minimum_required(VERSION 3.21)
 
-project(minisynth-qt VERSION 1.0 LANGUAGES CXX)
+project(minisynth-qt VERSION 1.1 LANGUAGES CXX)
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 set(CMAKE_AUTOUIC ON)
@@ -28,6 +28,7 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
     qt_add_executable(minisynth-qt
         MANUAL_FINALIZATION
         ${PROJECT_SOURCES}
+        README.md
     )
 else()
     add_executable(minisynth-qt
