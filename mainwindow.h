@@ -59,8 +59,10 @@ signals:
     void stallDetected();
 
 private:
+    void initializeFormat();
+    void initializeAudio();
     void initializeWindow();
-	void initializeAudio();
+    void initializeDevice();
 
 private slots:
     void deviceChanged(int index);
@@ -77,12 +79,15 @@ private:
     QAudioFormat m_format;
     int m_bufferTime;
     bool m_running;
-    QScopedPointer<ToneSynthesizer> m_synth;
+    ToneSynthesizer *m_synth;
 #if QT_VERSION < QT_VERSION_CHECK(6,0,0)
-    QScopedPointer<QAudioOutput> m_audioOutput;
+    QAudioDeviceInfo m_defaultDeviceInfo, m_currentDeviceInfo;
+    QAudioOutput *m_audioOutput;
 #else
-    QScopedPointer<QAudioSink> m_audioOutput;
+    QAudioDevice m_defaultDeviceInfo, m_currentDeviceInfo;
+    QAudioSink *m_audioOutput;
 #endif
+
 #if !defined(Q_OS_WASM)
     QTimer m_stallDetector;
 #endif

@@ -16,9 +16,10 @@
     along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include <limits>
 //#include <QDebug>
 #include <QtMath>
+#include <limits>
+
 #include "tonesynth.h"
 
 ToneSynthesizer::ToneSynthesizer(const QAudioFormat &format):
@@ -67,11 +68,8 @@ void ToneSynthesizer::noteOn(const QString &note)
 
 void ToneSynthesizer::noteOff()
 {
-//    qDebug() << Q_FUNC_INFO
-//             << "last synth period:"
-//             << m_lastBufferSize << "bytes,"
-//             << m_format.durationForBytes(m_lastBufferSize) / 1000
-//             << "milliseconds";
+    // qDebug() << Q_FUNC_INFO << "last synth period:" << m_lastBufferSize << "bytes,"
+    //          << m_format.durationForBytes(m_lastBufferSize) / 1000 << "milliseconds";
     m_envelState = EnvelopeState::releaseState;
     m_envelCount = m_releaseTime;
 }

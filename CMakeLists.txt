@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.5)
 
-project(minisynth-qt VERSION 1.0 LANGUAGES CXX)
+project(minisynth-qt VERSION 1.1 LANGUAGES CXX)
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 set(CMAKE_AUTOUIC ON)
