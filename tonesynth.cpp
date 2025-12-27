@@ -150,7 +150,9 @@ qint64 ToneSynthesizer::readData(char *data, qint64 maxlen)
         }
         *reinterpret_cast<float *>(ptr) = currentSample;
         ptr += channelBytes;
-        length -= channelBytes;
+        *reinterpret_cast<float *>(ptr) = currentSample;
+        ptr += channelBytes;
+        length -= 2*channelBytes;
     }
     m_lastBufferSize = buflen;
     return buflen;

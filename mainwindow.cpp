@@ -79,12 +79,13 @@ void MainWindow::initializeFormat()
     m_format.setSampleType(QAudioFormat::Float);
     m_defaultDeviceInfo = QAudioDeviceInfo::defaultOutputDevice();
 #else
-    m_format.setChannelConfig(QAudioFormat::ChannelConfigMono);
+    m_format.setChannelConfig(QAudioFormat::ChannelConfigStereo);
     m_format.setSampleFormat(QAudioFormat::Float);
     m_defaultDeviceInfo = QMediaDevices::defaultAudioOutput();
 #endif
-    m_format.setSampleRate(44100);
+    m_format.setSampleRate(48000);
     m_currentDeviceInfo = m_defaultDeviceInfo;
+    qDebug() << Q_FUNC_INFO << m_format;
 }
 
 void MainWindow::initializeAudio()
@@ -139,7 +140,9 @@ void MainWindow::initializeWindow()
     m_ui->deviceBox->addItem(m_defaultDeviceInfo.description(),
                              QVariant::fromValue(m_defaultDeviceInfo));
     for (auto &deviceInfo : QMediaDevices::audioOutputs()) {
-        if (deviceInfo != m_defaultDeviceInfo && deviceInfo.isFormatSupported(m_format))
+        // see https://qt-project.atlassian.net/browse/QTBUG-136057
+        qDebug() << Q_FUNC_INFO << deviceInfo.description() << deviceInfo.isFormatSupported(m_format);
+        if (deviceInfo != m_defaultDeviceInfo) // && deviceInfo.isFormatSupported(m_format))
             m_ui->deviceBox->addItem(deviceInfo.description(), QVariant::fromValue(deviceInfo));
     }
     m_ui->deviceBox->setCurrentText(m_defaultDeviceInfo.description());
@@ -176,21 +179,23 @@ void MainWindow::initializeDevice()
 #else
     const QAudioDevice deviceInfo = m_ui->deviceBox->currentData().value<QAudioDevice>();
 #endif
-    if (!deviceInfo.isFormatSupported(m_format)) {
+    if (m_currentDeviceInfo != deviceInfo) {
+        if (!deviceInfo.isFormatSupported(m_format)) {
 #if !defined(Q_OS_WASM)
-        QMessageBox::warning(this,
-                             "Audio format not supported",
-                             "The selected audio device does not support the synth's audio format. "
-                             "Please select another device.");
+            QMessageBox::warning(this,
+                                 "Audio format not supported",
+                                 "The selected audio device does not support the synth's audio format. "
+                                 "Please select another device.");
 #endif
-        return;
+            return;
+        }
+        m_currentDeviceInfo = deviceInfo;
     }
-    m_currentDeviceInfo = deviceInfo;
 }
 
 void MainWindow::deviceChanged(int index)
 {
-    //qDebug() << Q_FUNC_INFO << m_ui->deviceBox->itemText(index);
+    qDebug() << Q_FUNC_INFO << m_ui->deviceBox->itemText(index);
 #if !defined(Q_OS_WASM)
     m_stallDetector.stop();
 #endif
