@@ -16,7 +16,7 @@
     along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
-//#include <QDebug>
+#include <QDebug>
 #include <QKeyEvent>
 #include <QtMath>
 #if !defined(Q_OS_WASM)
@@ -44,6 +44,9 @@ MainWindow::MainWindow(QWidget *parent)
     , m_bufferTime(50)
 #endif
     , m_running(false)
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+    , m_devices(new QMediaDevices(this))
+#endif
 {
     //qDebug() << Q_FUNC_INFO;
     m_ui->setupUi(this);
@@ -79,20 +82,20 @@ void MainWindow::initializeFormat()
     m_format.setSampleType(QAudioFormat::Float);
     m_defaultDeviceInfo = QAudioDeviceInfo::defaultOutputDevice();
 #else
-    m_format.setChannelConfig(QAudioFormat::ChannelConfigStereo);
+    m_format.setChannelConfig(QAudioFormat::ChannelConfigMono);
     m_format.setSampleFormat(QAudioFormat::Float);
-    m_defaultDeviceInfo = QMediaDevices::defaultAudioOutput();
+    m_defaultDeviceInfo = m_devices->defaultAudioOutput();
 #endif
-    m_format.setSampleRate(48000);
+    m_format.setSampleRate(44100);
     m_currentDeviceInfo = m_defaultDeviceInfo;
-    qDebug() << Q_FUNC_INFO << m_format;
+   // qDebug() << Q_FUNC_INFO << m_format;
 }
 
 void MainWindow::initializeAudio()
 {
     //qDebug() << Q_FUNC_INFO;
     m_running = false;
-
+    
     m_synth = new ToneSynthesizer(m_format);
     qint64 bufferLength = m_format.bytesForDuration(m_bufferTime * 1000);
     // qDebug() << "requested buffer size:" << bufferLength << "bytes," << m_bufferTime
@@ -103,7 +106,7 @@ void MainWindow::initializeAudio()
     QObject::connect(m_audioOutput, &QAudioOutput::stateChanged, this, [=](QAudio::State state) {
 #else
     m_audioOutput = new QAudioSink(m_currentDeviceInfo, m_format);
-    QObject::connect(m_audioOutput, &QAudioSink::stateChanged, this, [=](QAudio::State state) {
+    connect(m_audioOutput, &QAudioSink::stateChanged, this, [=](QAudio::State state) {
 #endif
         //qDebug() << "Audio Output state:" << state << "error:" << m_audioOutput->error();
         if (m_running && (m_audioOutput->error() == QAudio::UnderrunError)) {
@@ -125,13 +128,15 @@ void MainWindow::initializeAudio()
 #endif
 }
 
-void MainWindow::initializeWindow()
+void MainWindow::updateDevices()
 {
-    //qDebug() << Q_FUNC_INFO;
+    qDebug() << Q_FUNC_INFO;
+    m_ui->deviceBox->clear();
 #if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
     m_ui->deviceBox->addItem(m_defaultDeviceInfo.deviceName(),
                              QVariant::fromValue(m_defaultDeviceInfo));
     for (auto &deviceInfo : QAudioDeviceInfo::availableDevices(QAudio::AudioOutput)) {
+        qDebug() << Q_FUNC_INFO << deviceInfo.deviceName() << deviceInfo.isFormatSupported(m_format);
         if (deviceInfo != m_defaultDeviceInfo && deviceInfo.isFormatSupported(m_format))
             m_ui->deviceBox->addItem(deviceInfo.deviceName(), QVariant::fromValue(deviceInfo));
     }
@@ -139,14 +144,23 @@ void MainWindow::initializeWindow()
 #else
     m_ui->deviceBox->addItem(m_defaultDeviceInfo.description(),
                              QVariant::fromValue(m_defaultDeviceInfo));
-    for (auto &deviceInfo : QMediaDevices::audioOutputs()) {
+    for (auto &deviceInfo : m_devices->audioOutputs()) {
         // see https://qt-project.atlassian.net/browse/QTBUG-136057
         qDebug() << Q_FUNC_INFO << deviceInfo.description() << deviceInfo.isFormatSupported(m_format);
-        if (deviceInfo != m_defaultDeviceInfo) // && deviceInfo.isFormatSupported(m_format))
+        if (deviceInfo != m_defaultDeviceInfo && deviceInfo.isFormatSupported(m_format))
             m_ui->deviceBox->addItem(deviceInfo.description(), QVariant::fromValue(deviceInfo));
     }
     m_ui->deviceBox->setCurrentText(m_defaultDeviceInfo.description());
 #endif
+}
+
+void MainWindow::initializeWindow()
+{
+    //qDebug() << Q_FUNC_INFO;
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+    connect(m_devices, &QMediaDevices::audioOutputsChanged, this, &MainWindow::updateDevices);
+#endif    
+    updateDevices();
 
     m_ui->bufferSpin->setValue(m_bufferTime);
     connect(m_ui->deviceBox, SIGNAL(activated(int)), this, SLOT(deviceChanged(int)));
@@ -195,7 +209,7 @@ void MainWindow::initializeDevice()
 
 void MainWindow::deviceChanged(int index)
 {
-    qDebug() << Q_FUNC_INFO << m_ui->deviceBox->itemText(index);
+    // qDebug() << Q_FUNC_INFO << m_ui->deviceBox->itemText(index);
 #if !defined(Q_OS_WASM)
     m_stallDetector.stop();
 #endif

@@ -53,7 +53,6 @@ void ToneSynthesizer::stop()
 
 void ToneSynthesizer::noteOn(const QString &note)
 {
-    //qDebug() << Q_FUNC_INFO << note;
     if (m_freq.contains(note)) {
         m_currentNote = note;
         qreal noteFreq = qPow(2, m_octave - 3) * m_freq[note];
@@ -64,6 +63,7 @@ void ToneSynthesizer::noteOn(const QString &note)
         m_envelState = EnvelopeState::attackState;
         m_envelCount = m_attackTime;
         m_envelVolume = 0.0;
+        // qDebug() << Q_FUNC_INFO << note << noteFreq;
     }
 }
 
@@ -150,9 +150,13 @@ qint64 ToneSynthesizer::readData(char *data, qint64 maxlen)
         }
         *reinterpret_cast<float *>(ptr) = currentSample;
         ptr += channelBytes;
-        *reinterpret_cast<float *>(ptr) = currentSample;
-        ptr += channelBytes;
-        length -= 2*channelBytes;
+        length -= channelBytes;
+        if (m_format.channelCount() == 2)
+        {
+            *reinterpret_cast<float *>(ptr) = currentSample;
+            ptr += channelBytes;
+            length -= channelBytes;
+        }
     }
     m_lastBufferSize = buflen;
     return buflen;

@@ -37,6 +37,7 @@
 #if QT_VERSION < QT_VERSION_CHECK(6,0,0)
 #include <QAudioOutput>
 #else
+#include <QMediaDevices>
 #include <QAudioSink>
 #endif
 
@@ -78,6 +79,8 @@ private slots:
     void stallMessage();
 #endif
 
+    void updateDevices();
+
 private:
     Ui::MainWindow *m_ui;
     QAudioFormat m_format;
@@ -108,7 +111,8 @@ private:
     QAudioOutput *m_audioOutput;
 #else
     QAudioDevice m_defaultDeviceInfo, m_currentDeviceInfo;
-    QAudioSink *m_audioOutput;
+    QAudioSink *m_audioOutput{nullptr};
+    QMediaDevices *m_devices{nullptr};
 #endif
 
 #if !defined(Q_OS_WASM)
