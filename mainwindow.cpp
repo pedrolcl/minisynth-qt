@@ -147,7 +147,7 @@ void MainWindow::updateDevices()
     for (auto &deviceInfo : m_devices->audioOutputs()) {
         // see https://qt-project.atlassian.net/browse/QTBUG-136057
         qDebug() << Q_FUNC_INFO << deviceInfo.description() << deviceInfo.isFormatSupported(m_format);
-        if (deviceInfo != m_defaultDeviceInfo && deviceInfo.isFormatSupported(m_format))
+        if (deviceInfo != m_defaultDeviceInfo) // && deviceInfo.isFormatSupported(m_format))
             m_ui->deviceBox->addItem(deviceInfo.description(), QVariant::fromValue(deviceInfo));
     }
     m_ui->deviceBox->setCurrentText(m_defaultDeviceInfo.description());
@@ -194,15 +194,15 @@ void MainWindow::initializeDevice()
     const QAudioDevice deviceInfo = m_ui->deviceBox->currentData().value<QAudioDevice>();
 #endif
     if (m_currentDeviceInfo != deviceInfo) {
-        if (!deviceInfo.isFormatSupported(m_format)) {
-#if !defined(Q_OS_WASM)
-            QMessageBox::warning(this,
-                                 "Audio format not supported",
-                                 "The selected audio device does not support the synth's audio format. "
-                                 "Please select another device.");
-#endif
-            return;
-        }
+//         if (!deviceInfo.isFormatSupported(m_format)) {
+// #if !defined(Q_OS_WASM)
+//             QMessageBox::warning(this,
+//                                  "Audio format not supported",
+//                                  "The selected audio device does not support the synth's audio format. "
+//                                  "Please select another device.");
+// #endif
+//             return;
+//         }
         m_currentDeviceInfo = deviceInfo;
     }
 }
